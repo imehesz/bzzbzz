@@ -5,9 +5,13 @@ var dataLoaderRunner = [
   }
 ];
 
-angular.module('bzzbzz', ['ngRoute'])
+angular.module('webApp', ['ngRoute'])
 .config(function ($routeProvider, $locationProvider) {
   $routeProvider
+  .when("/", {
+    templateUrl: "/html/main/home.html",
+    controller: "mainController"
+  })
   .when('/tweets', {
     templateUrl: '/html/tweets/getIndex.html',
     controller: 'tweetsController',
@@ -16,7 +20,7 @@ angular.module('bzzbzz', ['ngRoute'])
     }
   })
   .otherwise({
-    redirectTo: '/tweets'
+    redirectTo: '/'
   });
 
   $locationProvider.html5Mode(true);

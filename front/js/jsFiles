@@ -3,4 +3,6 @@
 ../bower_components/jquery/dist/jquery.js
 ../bower_components/bootstrap/dist/js/bootstrap.js
 front-app.js
+controllers/main.js
 controllers/tweets.js
+app/PageManager.js
