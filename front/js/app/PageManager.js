@@ -11,6 +11,17 @@ var PageManager = (function(){
     var frameCenter;
     var pageWidth;
     var pageHeight;
+    var JAW_TOP = ".jaws.top";
+    var JAW_BOTTOM = ".jaws.bottom";
+    var JAW_RIGHT = ".jaws.right";
+    var JAW_LEFT = ".jaws.left";
+    
+    function resetJaws() {
+      $frame.find(JAW_TOP).css("height", "0");
+      $frame.find(JAW_BOTTOM).css("height", "0");
+      $frame.find(JAW_LEFT).css("width", "0");
+      $frame.find(JAW_RIGHT).css("width", "0");
+    }
     
     function renderPanel() {
       if (panelIndex < 0) panelIndex = 0;
@@ -18,6 +29,9 @@ var PageManager = (function(){
       
       var coord = coordinates[panelIndex];
       var coordArr = coord.split(",");
+      
+      //cleanup
+      resetJaws();
   
       if (coordArr.length == 4) {
         var panelX1 = coordArr[0];
@@ -25,6 +39,7 @@ var PageManager = (function(){
         var panelX2 = coordArr[2];
         var panelY2 = coordArr[3];
         var zoom = 1;
+        var jawLength = 0;
         
         var originalPanelWith = panelX2 - panelX1;
         var originalPanelHeight = panelY2 - panelY1;
@@ -37,6 +52,17 @@ var PageManager = (function(){
 
         var panelWidth = zoom * (panelX2-panelX1);
         var panelHeight = zoom * (panelY2-panelY1);
+
+        // wider than higher        
+        if (originalPanelWith >= originalPanelHeight) {
+          jawLength = ($frame.height() - panelHeight) / 2;
+          $frame.find(JAW_TOP).css("height", jawLength + "px");
+          $frame.find(JAW_BOTTOM).css("height", jawLength + "px");
+        } else {
+          jawLength = ($frame.width() - panelWidth) / 2;
+          $frame.find(JAW_LEFT).css("width", jawLength + "px");
+          $frame.find(JAW_RIGHT).css("width", jawLength + "px");          
+        }        
         
         // moving panel center to page center
         var moveX = frameCenter.x - (panelX1*zoom) - (panelWidth/2);

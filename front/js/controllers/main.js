@@ -13,7 +13,9 @@ angular.module('webApp')
       "181,163,475,286",
       "175,336,472,456"
     ]);
-    
+  
+  //pm.setPage( "http://i.imgur.com/06VRFlC.jpg?v=" + Math.random(), ["4,4,784,118", "10,150,748,412", "6,446,288,802", "322,440,770,788", "12,834,352,1182", "370,826,770,1180"]);
+  
   pm.renderPage();
   
   $scope.prevPanel = function() {
