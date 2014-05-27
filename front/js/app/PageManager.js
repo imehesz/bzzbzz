@@ -24,9 +24,16 @@ var PageManager = (function(){
         var panelY1 = coordArr[1];
         var panelX2 = coordArr[2];
         var panelY2 = coordArr[3];
+        var zoom = 1;
+        
+        var originalPanelWith = panelX2 - panelX1;
+        var originalPanelHeight = panelY2 - panelY1;
 
-        var zoom = $frame.width() / (panelX2-panelX1);
-        //zoom = 1;
+        if (originalPanelWith >= originalPanelHeight) {
+          zoom = $frame.width() / (panelX2-panelX1);
+        } else {
+          zoom = $frame.height() / (originalPanelHeight);
+        }
 
         var panelWidth = zoom * (panelX2-panelX1);
         var panelHeight = zoom * (panelY2-panelY1);
