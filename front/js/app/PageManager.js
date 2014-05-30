@@ -2,10 +2,15 @@ var PageManager = (function(){
   var instance;
   
   function init() {
+    var pages = [];
+    var PAGE_VIEW_LEVEL = 1;
+    var PANEL_VIEW_LEVEL = 2;
+    var viewLevel = PAGE_VIEW_LEVEL;
     var pageUrl;
     var coordinates = [];
     var frameId = "#frame";
     var panelIndex = 0;
+    var pageIndex = 0;
     var pageCenter;
     var $frame;
     var frameCenter;
@@ -17,22 +22,22 @@ var PageManager = (function(){
     var JAW_LEFT = ".jaws.left";
     
     function resetJaws() {
-      $frame.find(JAW_TOP).css("height", "0");
-      $frame.find(JAW_BOTTOM).css("height", "0");
-      $frame.find(JAW_LEFT).css("width", "0");
-      $frame.find(JAW_RIGHT).css("width", "0");
+      if ($frame && $frame.length) {
+        $frame.find(JAW_TOP).css("height", "0");
+        $frame.find(JAW_BOTTOM).css("height", "0");
+        $frame.find(JAW_LEFT).css("width", "0");
+        $frame.find(JAW_RIGHT).css("width", "0");
+      } else {
+        console.warn("Err! No $frame in DOM!?", $frame);
+      }
     }
     
-    function renderPanel() {
-      if (panelIndex < 0) panelIndex = 0;
-      if (panelIndex >= coordinates.length) panelIndex = coordinates.length -1;
-      
-      var coord = coordinates[panelIndex];
-      var coordArr = coord.split(",");
-      
+    function renderByCoordinates(coordsStr) {
       //cleanup
       resetJaws();
-  
+      
+      var coordArr = coordsStr.split(",");
+      
       if (coordArr.length == 4) {
         var panelX1 = coordArr[0];
         var panelY1 = coordArr[1];
@@ -94,54 +99,77 @@ var PageManager = (function(){
         }
         
         // moving panel center to page center
-        var moveX = frameCenter.x - (panelX1*zoom) - (panelWidth/2);
-        var moveY = frameCenter.y - (panelY1*zoom) - (panelHeight/2);
+        if (viewLevel == PANEL_VIEW_LEVEL) {
+          var moveX = frameCenter.x - (panelX1*zoom) - (panelWidth/2);
+          var moveY = frameCenter.y - (panelY1*zoom) - (panelHeight/2);
+          $frame.css("background-position", moveX + "px " + moveY + "px");
+        } else {
+          $frame.css("background-position", "center");
+        }
         
-        $frame.css("background-position", moveX + "px " + moveY + "px");
         $frame.css("background-size", (pageWidth*zoom) + "px", (pageHeight*zoom) + "px");
       } else {
         console.warn("Wrong number of coordinates!", coord);
       }
+    }
+    
+    // renders a panel within the page based on `pageIndex` and `panelIndex`
+    function renderPanel() {
+      if (panelIndex < 0) panelIndex = 0;
+      if (panelIndex >= pages[pageIndex].coordinates.length) panelIndex = pages[pageIndex].coordinates.length-1;
+      
+      renderByCoordinates(pages[pageIndex].coordinates[panelIndex]);
     };
     
+    // "renders" the WHOLE page based on `pageIndex` and `panelIndex`
     function renderPage() {
-        // loads the page link (image)
-        // and renders the first panel
-        if (pageUrl && coordinates.length > 0) {
-          var page = new Image();
-          page.src = pageUrl;
+      if (pageIndex < 0) pageIndex = 0;
+      if (pageIndex >= pages.length) pageIndex = pages.length-1;
+      
+      renderByCoordinates("0,0,"+pageWidth+","+pageHeight);
+    }
+    
+    // set the background image aka `page` and triggers a callback when the image has been loaded
+    function loadPage(url, callback) {
+      if (url) {
+        var page = new Image();
+        page.src = url;
+        
+        page.onload = function(e) {
+          pageWidth = this.width;
+          pageHeight = this.height;
           
-          page.onload = function(e) {
-            pageWidth = this.width;
-            pageHeight = this.height;
-            
-            $frame = $(frameId);
-            pageCenter = {
-              x: pageWidth/2,
-              y: pageHeight/2
+          $frame = $(frameId);
+          pageCenter = {
+            x: pageWidth/2,
+            y: pageHeight/2
+          };
+          
+          if ($frame) {
+            $frame.css("background-image", "url(" + url + ")");
+            frameCenter = {
+              x: $frame.width()/2,
+              y: $frame.height()/2
             };
-            
-            if ($frame) {
-              $frame.css("background-image", "url(" + pageUrl + ")");
-              frameCenter = {
-                x: $frame.width()/2,
-                y: $frame.height()/2
-              };
-  
-              renderPanel(coordinates[0]);
-            } else {
-              console.warn("Frame is not present in DOM!", $frame);
-            }
+          } else {
+            console.warn("Frame is not present in DOM!", $frame);
           }
-        } else {
-          console.warn("Hmmm. Missing pageUrl or coordinates", pageUrl, coordinates);
-        }              
-    };
+          
+          if (callback) {
+            callback();
+          }
+        }
+      }
+    }
     
     return {
       setPage: function(url, coords) {
         pageUrl = url;
         coordinates = coords;
+        loadPage();
+      },
+      setPages: function(pagesArr) {
+        pages = pagesArr;
       },
       getPageUrl: function() {
         return pageUrl;
@@ -162,12 +190,41 @@ var PageManager = (function(){
       setFrameId: function(newFrameId) {
         frameId = newFrameId;
       },
-      renderPage: renderPage,
       nextPanel: function() {
         renderPanel(++panelIndex);
       },
       prevPanel: function() {
         renderPanel(--panelIndex);
+      },
+      goPrev: function() {
+        if (viewLevel == PAGE_VIEW_LEVEL) {
+          pageIndex--;
+          renderPage();
+        } else if (viewLevel == PANEL_VIEW_LEVEL) {
+          panelIndex--;
+          renderPanel();
+        }
+      },
+      goNext: function() {
+        if (viewLevel == PAGE_VIEW_LEVEL) {
+          pageIndex++;
+          renderPage();
+        } else if (viewLevel == PANEL_VIEW_LEVEL) {
+          panelIndex++;
+          renderPanel();
+        }        
+      },
+      run: function() {
+        if (pages.length > 0) {
+          pageIndex = 0;
+          panelIndex = 0;          
+          
+          // based on View Level we set set callback
+          loadPage(
+            pages[pageIndex].url, 
+            (viewLevel == PANEL_VIEW_LEVEL ? renderPanel:renderPage)
+          );
+        }
       }
     }
   }
