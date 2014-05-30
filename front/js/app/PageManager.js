@@ -43,26 +43,55 @@ var PageManager = (function(){
         
         var originalPanelWith = panelX2 - panelX1;
         var originalPanelHeight = panelY2 - panelY1;
+        var viewerLandscape = $frame.width() > $frame.height();
+        var viewerPortrait = !viewerLandscape;
+        var panelLandscape = originalPanelWith > originalPanelHeight;
+        var panelPortrait = !panelLandscape;
 
-        if (originalPanelWith >= originalPanelHeight) {
-          zoom = $frame.width() / (panelX2-panelX1);
+        //if (originalPanelWith >= originalPanelHeight) {
+        if (viewerPortrait) {
+          zoom = $frame.height() / originalPanelHeight;
         } else {
-          zoom = $frame.height() / (originalPanelHeight);
+          zoom = $frame.width() / originalPanelWith;
         }
 
         var panelWidth = zoom * (panelX2-panelX1);
         var panelHeight = zoom * (panelY2-panelY1);
-
-        // wider than higher        
-        if (originalPanelWith >= originalPanelHeight) {
+        
+        // TODO refactoring
+        if (viewerPortrait && panelWidth > $frame.width()) {
+          zoom = $frame.width() / originalPanelWith;
+        } else if (viewerLandscape && panelHeight > $frame.height()) {
+          zoom = $frame.height() / originalPanelHeight;
+        }
+        
+        panelWidth = zoom * (panelX2-panelX1);
+        panelHeight = zoom * (panelY2-panelY1);
+        
+        // TODO refactor this below, too late, can't think
+        if ($frame.width() >= $frame.height()) {
           jawLength = ($frame.height() - panelHeight) / 2;
-          $frame.find(JAW_TOP).css("height", jawLength + "px");
-          $frame.find(JAW_BOTTOM).css("height", jawLength + "px");
+          if (jawLength > 0) {
+            $frame.find(JAW_TOP).css("height", jawLength + "px");
+            $frame.find(JAW_BOTTOM).css("height", jawLength + "px");
+          } else {
+            // if jawLength is `0`, we might have to open the other way
+            jawLength = ($frame.width() - panelWidth) / 2;
+            $frame.find(JAW_LEFT).css("width", jawLength + "px");
+            $frame.find(JAW_RIGHT).css("width", jawLength + "px");            
+          }
         } else {
           jawLength = ($frame.width() - panelWidth) / 2;
-          $frame.find(JAW_LEFT).css("width", jawLength + "px");
-          $frame.find(JAW_RIGHT).css("width", jawLength + "px");          
-        }        
+          if (jawLength > 0) {
+            $frame.find(JAW_LEFT).css("width", jawLength + "px");
+            $frame.find(JAW_RIGHT).css("width", jawLength + "px");
+          } else {
+            // if jawLength is `0`, we might have to open it the other way
+            jawLength = ($frame.height() - panelHeight) / 2;
+            $frame.find(JAW_TOP).css("height", jawLength + "px");
+            $frame.find(JAW_BOTTOM).css("height", jawLength + "px");
+          }
+        }
         
         // moving panel center to page center
         var moveX = frameCenter.x - (panelX1*zoom) - (panelWidth/2);
