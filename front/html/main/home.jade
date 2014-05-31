@@ -9,4 +9,6 @@ h1 aaaa
     .jaws.bottom
 
   button(ng-click="goPrev()", title="Previous").btn.go-prev <
+  button(ng-show="isPageView",ng-click="switchToPanelView()").btn Switch to Panel View
+  button(ng-show="!isPageView",ng-click="switchToPageView()").btn Switch to Page View
   button(ng-click="goNext()", title="Next").btn.go-next >

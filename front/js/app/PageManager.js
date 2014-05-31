@@ -5,6 +5,7 @@ var PageManager = (function(){
     var pages = [];
     var PAGE_VIEW_LEVEL = 1;
     var PANEL_VIEW_LEVEL = 2;
+    var loadingGif = "http://cdn2.hubspot.net/hub/290637/file-319004253-gif/spinner.gif";
     var viewLevel = PAGE_VIEW_LEVEL;
     var pageUrl;
     var coordinates = [];
@@ -12,7 +13,7 @@ var PageManager = (function(){
     var panelIndex = 0;
     var pageIndex = 0;
     var pageCenter;
-    var $frame;
+    var $frame = $(frameId);
     var frameCenter;
     var pageWidth;
     var pageHeight;
@@ -115,22 +116,36 @@ var PageManager = (function(){
     
     // renders a panel within the page based on `pageIndex` and `panelIndex`
     function renderPanel() {
-      if (panelIndex < 0) panelIndex = 0;
-      if (panelIndex >= pages[pageIndex].coordinates.length) panelIndex = pages[pageIndex].coordinates.length-1;
+      var callback = function() {
+        renderByCoordinates(pages[pageIndex].coordinates[panelIndex]);
+      }
       
-      renderByCoordinates(pages[pageIndex].coordinates[panelIndex]);
+      if (panelIndex >= pages[pageIndex].coordinates.length) {
+        if (pages[pageIndex+1]) {
+          pageIndex++;
+          panelIndex = 0;
+          loadPage(pages[pageIndex].url, callback);
+        }
+      } else if (panelIndex < 0) {
+        if (pages[pageIndex-1]) {
+          pageIndex--;
+          panelIndex = pages[pageIndex].coordinates.length-1;
+          loadPage(pages[pageIndex].url, callback);
+        }
+      } else {
+        callback();
+      }
     };
     
     // "renders" the WHOLE page based on `pageIndex` and `panelIndex`
     function renderPage() {
-      if (pageIndex < 0) pageIndex = 0;
-      if (pageIndex >= pages.length) pageIndex = pages.length-1;
-      
       renderByCoordinates("0,0,"+pageWidth+","+pageHeight);
     }
     
     // set the background image aka `page` and triggers a callback when the image has been loaded
     function loadPage(url, callback) {
+      $frame.css("background-image", "url(" + loadingGif + ")");
+      $frame.css("background-position", "center");
       if (url) {
         var page = new Image();
         page.src = url;
@@ -139,7 +154,6 @@ var PageManager = (function(){
           pageWidth = this.width;
           pageHeight = this.height;
           
-          $frame = $(frameId);
           pageCenter = {
             x: pageWidth/2,
             y: pageHeight/2
@@ -162,12 +176,14 @@ var PageManager = (function(){
       }
     }
     
+    function setPage(url, coords) {
+      pageUrl = url;
+      coordinates = coords;
+      loadPage();
+    }
+    
     return {
-      setPage: function(url, coords) {
-        pageUrl = url;
-        coordinates = coords;
-        loadPage();
-      },
+      setPage: setPage,
       setPages: function(pagesArr) {
         pages = pagesArr;
       },
@@ -180,7 +196,6 @@ var PageManager = (function(){
       getCoordinates: function() {
         return coordinates;
       },
-      
       setCoordinates: function(newCords) {
         coordinates = newCords;
       },
@@ -196,10 +211,31 @@ var PageManager = (function(){
       prevPanel: function() {
         renderPanel(--panelIndex);
       },
+      setViewLevel: function(level) {
+        viewLevel = level;
+        if (viewLevel == PANEL_VIEW_LEVEL) {
+          panelIndex = 0;
+          renderPanel();
+        }
+        if (viewLevel == PAGE_VIEW_LEVEL) renderPage();
+      },
+      getViewLevel: function() {
+        return viewLevel;
+      },
+      getPageViewCode: function() {
+        return PAGE_VIEW_LEVEL;
+      },
+      getPanelViewCode: function() {
+        return PANEL_VIEW_LEVEL;
+      },
       goPrev: function() {
         if (viewLevel == PAGE_VIEW_LEVEL) {
-          pageIndex--;
-          renderPage();
+          if (pageIndex > 0) {
+            pageIndex--;
+            if (pages[pageIndex]) {
+              loadPage(pages[pageIndex].url, renderPage);
+            }
+          }
         } else if (viewLevel == PANEL_VIEW_LEVEL) {
           panelIndex--;
           renderPanel();
@@ -207,12 +243,16 @@ var PageManager = (function(){
       },
       goNext: function() {
         if (viewLevel == PAGE_VIEW_LEVEL) {
-          pageIndex++;
-          renderPage();
+          if (pageIndex < pages.length-1) {
+            pageIndex++;
+            if (pages[pageIndex]) {
+              loadPage(pages[pageIndex].url, renderPage);
+            }            
+          }
         } else if (viewLevel == PANEL_VIEW_LEVEL) {
           panelIndex++;
           renderPanel();
-        }        
+        }
       },
       run: function() {
         if (pages.length > 0) {
