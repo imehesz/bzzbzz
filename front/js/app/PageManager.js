@@ -125,12 +125,18 @@ var PageManager = (function(){
           pageIndex++;
           panelIndex = 0;
           loadPage(pages[pageIndex].url, callback);
+        } else {
+          // no more pages, let's set panelIndex to the highest on this page
+          panelIndex = pages[pageIndex].coordinates.length-1;
         }
       } else if (panelIndex < 0) {
         if (pages[pageIndex-1]) {
           pageIndex--;
           panelIndex = pages[pageIndex].coordinates.length-1;
           loadPage(pages[pageIndex].url, callback);
+        } else {
+          // no page, let's reset panelIndex
+          panelIndex = 0;
         }
       } else {
         callback();
@@ -257,7 +263,7 @@ var PageManager = (function(){
       run: function() {
         if (pages.length > 0) {
           pageIndex = 0;
-          panelIndex = 0;          
+          panelIndex = 0;
           
           // based on View Level we set set callback
           loadPage(
